@@ -91,7 +91,7 @@ Cada paso trae título, texto (qué hacer y por qué), comandos exactos opcional
 - El progreso es **por cuenta**: XP, racha, lecciones, logros, certificados y tareas son de cada usuario.
 - La primera cuenta que se crea **hereda el avance hecho antes del login** (XP, lecciones y logros no se pierden).
 
-El perfil muestra "Versión 1.0 · Local: sin nube todavía" mientras no haya Firebase.
+El perfil muestra "Versión 1.0.1 · Local: sin nube todavía" mientras no haya Firebase.
 
 ## Sin botón de IA en la 1.0
 
@@ -115,11 +115,11 @@ El modelo previsto es el mismo que el de Checklist de Soporte y el de DevTools:
 2. **Activar Auth por correo/contraseña**: en la consola, Compilación → Authentication → Método de acceso → habilitar "Correo electrónico/contraseña".
 3. **Crear Firestore y publicar las reglas**: en la consola, Compilación → Firestore Database → Crear base de datos, y luego en la pestaña Reglas pegar el contenido de `firestore.rules` (del código en `~/workspace/android/programar-app/firestore.rules`) y publicar. Por consola: el `firebase deploy` por CLI falla en el sandbox por la ruta Node → proxy (igual que pasó con DevTools).
 4. **Registrar la app web y pegar la config real en `www/firebase-config.js`**: en la consola, Configuración del proyecto → "Tus apps" → agregar app web `</>`; copiar los valores (`apiKey`, `authDomain`, `projectId`, `storageBucket`, `messagingSenderId`, `appId`) y pegarlos en `www/firebase-config.js` (la plantilla con placeholders está en `www/firebase-config.example.js`). El archivo real **NO se sube a GitHub** (está en `.gitignore`): la apiKey web es pública por diseño, pero el resto de la config no tiene por qué versionarse. El bundle NO embebe la configuración (se lee de `window.PROGRAMAR_FIREBASE_CONFIG` en runtime), así que su md5 no cambia con la config.
-5. **Si cambia `www/cloud/firebase.js`, reconstruir el bundle** con `pnpm build:cloud` (esbuild → `www/cloud/firebase.bundle.js`), correr `npx cap sync` y **recompilar la APK** (mismo `appId` y mismo keystore, `versionCode` 2). La app instalada usa el bundle, no el `.js`.
+5. **Si cambia `www/cloud/firebase.js`, reconstruir el bundle** con `pnpm build:cloud` (esbuild → `www/cloud/firebase.bundle.js`), correr `npx cap sync` y **recompilar la APK** (mismo `appId` y mismo keystore, `versionCode` 3). La app instalada usa el bundle, no el `.js`.
 
 ## Instalación de la APK
 
-- **APK 1.0**: paquete `mx.gerardo.programar`, `versionCode` 1, `versionName` 1.0, `targetSdk` 36, 3,951,348 bytes, md5 `66da6fbb3a1a929f2f4ff2a6494b2b7e`, firma v2 verificada con apksigner.
+- **APK 1.0.1** (actual): paquete `mx.gerardo.programar`, `versionCode` 2, `versionName` 1.0.1, `targetSdk` 36, 3,951,348 bytes, md5 `9c803058e59783e2e9907a9aa3301196`, firma v2 verificada con apksigner. La 1.0 (md5 `66da6fbb3a1a929f2f4ff2a6494b2b7e`) quedó sustituida por este parche, que corrige la tarea `javascript-e13` (la longitud de `"<b>Hola</b>"` es 11, no 12).
 - **Keystore permanente**: `~/workspace/android/keys/programar-release.keystore`, alias `programar`, SHA-256 del certificado `CE:C3:A3:F2:8B:68:16:98:F4:31:62:BB:42:D8:95:43:A0:57:B0:82:0A:43:8A:54:25:AE:0B:4E:98:97:FA:DE`. La configuración de firma vive en `keys/programar-keystore.properties` (permisos 600) y se usa vía `signingConfigs.release` en `android/app/build.gradle`. **Nunca** usar el keystore debug: se regenera en cada reinicio de la VM y cambia la firma, así que Android bloquea las actualizaciones.
 - Se instala como actualización sobre versiones futuras con el mismo keystore; cambiar de firma exigiría desinstalar la app una vez.
 - La APK está en `~/workspace/your_files/aprender-a-programar.apk`. El APK compilado vive en `android/app/build/outputs/apk/release/app-release.apk` dentro de `~/workspace/android/programar-app/`.
@@ -149,7 +149,7 @@ node tests/check-data.cjs   # validador de contenido
 node tests/test-app.cjs     # pruebas jsdom con datos reales
 ```
 
-Verificación de la 1.0: `tests/check-data.cjs` **44,329 checks, 0 fallos**; `tests/test-app.cjs` (jsdom, datos reales) **48/48**.
+Verificación de la 1.0.1: `tests/check-data.cjs` **44,329 checks, 0 fallos**; `tests/test-app.cjs` (jsdom, datos reales) **48/48**.
 
 ### Build de la APK
 
@@ -181,7 +181,7 @@ Este repo contiene **solo la documentación** de la app (`docs/`). El código de
 ## Estado actual (2026-11-21)
 
 - Plan aprobado y app construida el mismo día: 13 rutas × 80 lecciones = 1,040 lecciones, 5,200 ejercicios, 1,040 tareas, 4 guías de Laboratorio. La ruta C++ con Qt y QML (80 lecciones) se agregó a petición de Gerardo, que la pidió con 80 lecciones en vez de las 20 propuestas al inicio.
-- APK 1.0 entregada el 2026-11-21: paquete `mx.gerardo.programar`, `versionCode` 1, firmada con keystore permanente (SHA-256 `CE:C3:A3:F2:8B:68:16:98:F4:31:62:BB:42:D8:95:43:A0:57:B0:82:0A:43:8A:54:25:AE:0B:4E:98:97:FA:DE`), md5 `66da6fbb3a1a929f2f4ff2a6494b2b7e`. Verificada estructuralmente (badging, firma, contenido empaquetado); sin probar aún en un teléfono real. El avance NO se sincroniza entre la web y la APK 1.0 (no hay Firebase todavía).
+- APK 1.0.1 entregada el 2026-11-21: paquete `mx.gerardo.programar`, `versionCode` 2, firmada con keystore permanente (SHA-256 `CE:C3:A3:F2:8B:68:16:98:F4:31:62:BB:42:D8:95:43:A0:57:B0:82:0A:43:8A:54:25:AE:0B:4E:98:97:FA:DE`), md5 `9c803058e59783e2e9907a9aa3301196`. Parche sobre la 1.0 (md5 `66da6fbb3a1a929f2f4ff2a6494b2b7e`) que corrige la tarea `javascript-e13`. Verificada estructuralmente (badging, firma, contenido empaquetado); sin probar aún en un teléfono real. El avance NO se sincroniza entre la web y la APK 1.0.1 (no hay Firebase todavía).
 - Proyecto Firebase `aprender-programar` **pendiente de crear** (la CLI perdió la sesión; hace falta `firebase login --reauth` con la cuenta de Gerardo, o crearlo en la consola). Código de nube listo (`www/cloud/firebase.js` + bundle md5 `1a841655ff6ad59fbeb9fd06fe83b4bd`, reglas en `firestore.rules`, config placeholder en `www/firebase-config.js`).
 - Documentación en este repositorio (`docs/`), lista para subir a GitHub con la aprobación de Gerardo.
 
