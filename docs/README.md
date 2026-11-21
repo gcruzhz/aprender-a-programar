@@ -6,7 +6,7 @@ App estilo Duolingo para aprender a programar en español: lecciones cortas, eje
 
 Una app de aprendizaje con 13 rutas, una por lenguaje o tema. Cada ruta tiene 4 niveles (Básico, Intermedio, Avanzado y Experto) con 20 lecciones cada uno: 80 lecciones por ruta, 1,040 en total. Las lecciones son de unos 5 minutos en un camino que se desbloquea paso a paso. Al completar una ruta se obtiene un certificado de nivel.
 
-La app vive como artefacto web fullstack de Muse (slug: `aprender-a-programar`). El APK para Android es una reconstrucción local aparte con el mismo contenido (`~/workspace/android/programar-app/`: un solo `www/index.html` + `www/data/*.js`, localStorage y login local por cuenta) — el artefacto web no tiene URL pública, así que no se puede envolver en un WebView. La nube (Firebase) está pendiente de crear (ver abajo): hasta entonces la app es modo local y el avance NO se sincroniza entre la web y la APK.
+La app vive como artefacto web fullstack de Muse (slug: `aprender-a-programar`). El APK para Android es una reconstrucción local aparte con el mismo contenido (`~/workspace/android/programar-app/`: un solo `www/index.html` + `www/data/*.js`, localStorage y login local por cuenta) — el artefacto web no tiene URL pública, así que no se puede envolver en un WebView. La nube es Firebase (proyecto `aprender-programar`, creado el 2026-11-21; ver abajo): la APK 2.0 ya la trae, pero **falta activar Auth por correo/contraseña en la consola** — hasta que Gerardo lo active, el registro/login en la nube falla y la app sigue en modo local.
 
 ## Rutas y contenido
 
@@ -91,15 +91,17 @@ Cada paso trae título, texto (qué hacer y por qué), comandos exactos opcional
 - El progreso es **por cuenta**: XP, racha, lecciones, logros, certificados y tareas son de cada usuario.
 - La primera cuenta que se crea **hereda el avance hecho antes del login** (XP, lecciones y logros no se pierden).
 
-El perfil muestra "Versión 1.0.1 · Local: sin nube todavía" mientras no haya Firebase.
+El perfil muestra "Versión 2.0 · Nube: tu avance se sincroniza" cuando hay config de Firebase; sin config diría "Local: sin nube todavía".
 
 ## Sin botón de IA en la 1.0
 
 A diferencia de la app de DevTools (que tiene "🤖 Preguntar a la IA" con Gemini), esta app **no trae botón de IA en la versión 1.0**. Si se agrega en una versión futura, la clave la pegaría Gerardo en el Perfil y nunca iría en el código.
 
-## Firebase — PENDIENTE DE CREAR (estado 2026-11-21)
+## Firebase — CREADO; Auth pendiente de activar (estado 2026-11-21)
 
-El proyecto Firebase nuevo y separado es **`aprender-programar`**, pero **aún no existe**: la CLI de Firebase perdió la sesión y no se pudo crear desde el sandbox. Hasta que exista, la app trabaja en **modo local** (cuentas y avance solo en el teléfono) y la nube web ↔ APK **NO sincroniza** entre sí: la app web usa su propio backend y la APK usará Firebase cuando exista el proyecto.
+El proyecto Firebase nuevo y separado es **`aprender-programar`** (plan Spark) y **ya existe**: se creó por CLI el 2026-11-21, con Firestore creado en la región `nam5` y las reglas de `firestore.rules` publicadas por CLI, y la app web "Aprender a Programar" registrada (App ID `1:584182094137:web:37c4a7e9f6741696e9f0e8`). La config real ya está en `www/firebase-config.js` y la APK 2.0 la incluye.
+
+**Lo que falta es activar Auth por correo/contraseña en la consola**: no se pudo activar por API (la API devolvió `CONFIGURATION_NOT_FOUND` tras varios intentos). Hasta que Gerardo lo active, el registro y el login en la nube **fallan** y la app trabaja en **modo local** (cuentas y avance solo en el teléfono), sin sincronizar web ↔ APK.
 
 El modelo previsto es el mismo que el de Checklist de Soporte y el de DevTools:
 
@@ -109,17 +111,19 @@ El modelo previsto es el mismo que el de Checklist de Soporte y el de DevTools:
 - **Offline:** la APK usa caché persistente de Firestore: funciona sin internet y sincroniza al volver la conexión (igual que Checklist y DevTools). La capa de nube es `www/cloud/firebase.js`, compilada con esbuild a `www/cloud/firebase.bundle.js` (md5 `1a841655ff6ad59fbeb9fd06fe83b4bd`).
 - **Migración de cuentas locales:** Firebase Auth no puede reutilizar las contraseñas guardadas en modo local (solo existen hashes, no las contraseñas). Cada usuario vuelve a registrarse en la nube con el mismo usuario y contraseña; en el primer inicio de sesión en la nube, el avance local existente se sube a Firestore si aún no hay avance en la nube (si ya hay avance en la nube, manda el de la nube).
 
-### Pasos exactos que debe hacer Gerardo
+### Paso que debe hacer Gerardo (Auth)
 
-1. **Re-autenticar la CLI de Firebase** con su cuenta (en el sandbox: `firebase login --reauth`), **o crear el proyecto `aprender-programar` directamente en** https://console.firebase.google.com (botón "Agregar proyecto", nombre del proyecto `aprender-programar`).
-2. **Activar Auth por correo/contraseña**: en la consola, Compilación → Authentication → Método de acceso → habilitar "Correo electrónico/contraseña".
-3. **Crear Firestore y publicar las reglas**: en la consola, Compilación → Firestore Database → Crear base de datos, y luego en la pestaña Reglas pegar el contenido de `firestore.rules` (del código en `~/workspace/android/programar-app/firestore.rules`) y publicar. Por consola: el `firebase deploy` por CLI falla en el sandbox por la ruta Node → proxy (igual que pasó con DevTools).
-4. **Registrar la app web y pegar la config real en `www/firebase-config.js`**: en la consola, Configuración del proyecto → "Tus apps" → agregar app web `</>`; copiar los valores (`apiKey`, `authDomain`, `projectId`, `storageBucket`, `messagingSenderId`, `appId`) y pegarlos en `www/firebase-config.js` (la plantilla con placeholders está en `www/firebase-config.example.js`). El archivo real **NO se sube a GitHub** (está en `.gitignore`): la apiKey web es pública por diseño, pero el resto de la config no tiene por qué versionarse. El bundle NO embebe la configuración (se lee de `window.PROGRAMAR_FIREBASE_CONFIG` en runtime), así que su md5 no cambia con la config.
-5. **Si cambia `www/cloud/firebase.js`, reconstruir el bundle** con `pnpm build:cloud` (esbuild → `www/cloud/firebase.bundle.js`), correr `npx cap sync` y **recompilar la APK** (mismo `appId` y mismo keystore, `versionCode` 3). La app instalada usa el bundle, no el `.js`.
+1. **Activar Auth por correo/contraseña**: en https://console.firebase.google.com, proyecto `aprender-programar`, Compilación → Authentication → Método de acceso → habilitar "Correo electrónico/contraseña" → Guardar. Sin este paso el login en la nube devuelve `CONFIGURATION_NOT_FOUND` y la app sigue en modo local.
+
+Lo ya hecho (2026-11-21, por CLI desde el sandbox): proyecto `aprender-programar` creado, Firestore creado en `nam5`, reglas de `firestore.rules` publicadas, app web registrada y config real pegada en `www/firebase-config.js`. El archivo real **NO se sube a GitHub** (está en `.gitignore`): la apiKey web es pública por diseño, pero el resto de la config no tiene por qué versionarse. El bundle NO embebe la configuración (se lee de `window.PROGRAMAR_FIREBASE_CONFIG` en runtime), así que su md5 no cambia con la config.
+
+### Si cambia `www/cloud/firebase.js`, reconstruir el bundle
+
+Con `pnpm build:cloud` (esbuild → `www/cloud/firebase.bundle.js`), correr `npx cap sync` y **recompilar la APK** (mismo `appId` y mismo keystore, subiendo el `versionCode`). La app instalada usa el bundle, no el `.js`.
 
 ## Instalación de la APK
 
-- **APK 1.0.1** (actual): paquete `mx.gerardo.programar`, `versionCode` 2, `versionName` 1.0.1, `targetSdk` 36, 3,951,348 bytes, md5 `9c803058e59783e2e9907a9aa3301196`, firma v2 verificada con apksigner. La 1.0 (md5 `66da6fbb3a1a929f2f4ff2a6494b2b7e`) quedó sustituida por este parche, que corrige la tarea `javascript-e13` (la longitud de `"<b>Hola</b>"` es 11, no 12).
+- **APK 2.0** (actual): paquete `mx.gerardo.programar`, `versionCode` 3, `versionName` 2.0, `targetSdk` 36, 3,951,340 bytes, md5 `2dac98edcccdb44f1a1d18685b819d8b`, firma v2 verificada con apksigner. Primera versión con nube (Firebase `aprender-programar`): el perfil dice "Versión 2.0 · Nube: tu avance se sincroniza". La 1.0.1 (md5 `9c803058e59783e2e9907a9aa3301196`) quedó sustituida. **Ojo**: Auth por correo/contraseña aún no está activado en la consola, así que el login en la nube falla hasta que Gerardo lo active; mientras tanto la app trabaja en modo local.
 - **Keystore permanente**: `~/workspace/android/keys/programar-release.keystore`, alias `programar`, SHA-256 del certificado `CE:C3:A3:F2:8B:68:16:98:F4:31:62:BB:42:D8:95:43:A0:57:B0:82:0A:43:8A:54:25:AE:0B:4E:98:97:FA:DE`. La configuración de firma vive en `keys/programar-keystore.properties` (permisos 600) y se usa vía `signingConfigs.release` en `android/app/build.gradle`. **Nunca** usar el keystore debug: se regenera en cada reinicio de la VM y cambia la firma, así que Android bloquea las actualizaciones.
 - Se instala como actualización sobre versiones futuras con el mismo keystore; cambiar de firma exigiría desinstalar la app una vez.
 - La APK está en `~/workspace/your_files/aprender-a-programar.apk`. El APK compilado vive en `android/app/build/outputs/apk/release/app-release.apk` dentro de `~/workspace/android/programar-app/`.
@@ -131,7 +135,7 @@ Código en `~/workspace/android/programar-app/`:
 - `www/index.html` — la app completa (una sola página, sin framework).
 - `www/data/*.js` — un archivo por ruta (`intro.js`, `python.js`, `javascript.js`, `typescript.js`, `java.js`, `csharp.js`, `go.js`, `rust.js`, `kotlin.js`, `sql.js`, `htmlcss.js`, `qt-qml.js`, `herramientas.js`) más `labs.js` (las 4 guías de Laboratorio). Cada archivo hace `window.PROGRAMAR_ROUTES.push({...})` (salvo `labs.js`, que usa `window.PROGRAMAR_LABS`). Estos archivos son la **fuente única del contenido**: la app web y la APK usan los mismos IDs y los mismos textos.
 - `www/cloud/firebase.js` + `www/cloud/firebase.bundle.js` — capa de nube (Firebase Auth + Firestore + caché offline).
-- `www/firebase-config.js` — config real del proyecto (placeholder hasta que exista Firebase; NO se sube a GitHub). Plantilla: `www/firebase-config.example.js`.
+- `www/firebase-config.js` — config real del proyecto `aprender-programar` (creado el 2026-11-21; NO se sube a GitHub). Plantilla: `www/firebase-config.example.js`.
 - `firestore.rules` — reglas de Firestore listas para publicar por consola.
 - `SCHEMA.md` — contrato de datos completo (rutas, lecciones, ejercicios, tareas, Laboratorio, reglas duras).
 - `tests/` — `check-data.cjs` (validador de contenido) y `test-app.cjs` (pruebas jsdom con datos reales).
@@ -149,7 +153,7 @@ node tests/check-data.cjs   # validador de contenido
 node tests/test-app.cjs     # pruebas jsdom con datos reales
 ```
 
-Verificación de la 1.0.1: `tests/check-data.cjs` **44,329 checks, 0 fallos**; `tests/test-app.cjs` (jsdom, datos reales) **48/48**.
+Verificación de la 2.0: `tests/check-data.cjs` **44,329 checks, 0 fallos**; `tests/test-app.cjs` (jsdom, datos reales) **48/48**; el `curriculum.ts` web regenerado desde `www/data/` es idéntico al anterior (**0 diferencias web vs APK** en los datos compartidos).
 
 ### Build de la APK
 
@@ -181,13 +185,12 @@ Este repo contiene **solo la documentación** de la app (`docs/`). El código de
 ## Estado actual (2026-11-21)
 
 - Plan aprobado y app construida el mismo día: 13 rutas × 80 lecciones = 1,040 lecciones, 5,200 ejercicios, 1,040 tareas, 4 guías de Laboratorio. La ruta C++ con Qt y QML (80 lecciones) se agregó a petición de Gerardo, que la pidió con 80 lecciones en vez de las 20 propuestas al inicio.
-- APK 1.0.1 entregada el 2026-11-21: paquete `mx.gerardo.programar`, `versionCode` 2, firmada con keystore permanente (SHA-256 `CE:C3:A3:F2:8B:68:16:98:F4:31:62:BB:42:D8:95:43:A0:57:B0:82:0A:43:8A:54:25:AE:0B:4E:98:97:FA:DE`), md5 `9c803058e59783e2e9907a9aa3301196`. Parche sobre la 1.0 (md5 `66da6fbb3a1a929f2f4ff2a6494b2b7e`) que corrige la tarea `javascript-e13`. Verificada estructuralmente (badging, firma, contenido empaquetado); sin probar aún en un teléfono real. El avance NO se sincroniza entre la web y la APK 1.0.1 (no hay Firebase todavía).
-- Proyecto Firebase `aprender-programar` **pendiente de crear** (la CLI perdió la sesión; hace falta `firebase login --reauth` con la cuenta de Gerardo, o crearlo en la consola). Código de nube listo (`www/cloud/firebase.js` + bundle md5 `1a841655ff6ad59fbeb9fd06fe83b4bd`, reglas en `firestore.rules`, config placeholder en `www/firebase-config.js`).
+- APK 2.0 entregada el 2026-11-21: paquete `mx.gerardo.programar`, `versionCode` 3, `versionName` 2.0, firmada con keystore permanente (SHA-256 `CE:C3:A3:F2:8B:68:16:98:F4:31:62:BB:42:D8:95:43:A0:57:B0:82:0A:43:8A:54:25:AE:0B:4E:98:97:FA:DE`), md5 `2dac98edcccdb44f1a1d18685b819d8b`, firma v2 verificada. Primera versión con nube: incluye la config real de Firebase y el bundle `1a841655ff6ad59fbeb9fd06fe83b4bd`. Verificada estructuralmente (badging, firma, contenido empaquetado); sin probar aún en un teléfono real.
+- Proyecto Firebase `aprender-programar` **creado** el 2026-11-21 (Firestore en `nam5`, reglas publicadas por CLI, app web registrada, config real en `www/firebase-config.js`). **Falta activar Auth por correo/contraseña en la consola** (paso arriba): hasta entonces el login en la nube falla y la app trabaja en modo local.
 - Documentación en este repositorio (`docs/`), lista para subir a GitHub con la aprobación de Gerardo.
 
 ## Pendiente / por definir
 
-- Crear el proyecto Firebase `aprender-programar` (pasos exactos arriba), activar Auth, publicar las reglas, pegar la config real y compilar la APK 2.0 con nube.
-- Verificar la sincronización web ↔ APK con una cuenta real en un navegador o teléfono (registrar, completar una lección, salir y volver a entrar).
+- Activar Auth por correo/contraseña en la consola de Firebase (paso arriba) y verificar la sincronización web ↔ APK con una cuenta real en un navegador o teléfono (registrar, completar una lección, salir y volver a entrar).
 - Detalle del stack interno del artefacto web (pendiente de documentar; no inventado aquí).
-- Pruebas de Gerardo en teléfono real: instalar la APK, registro/login, completar una lección, tarea JS y por archivo, Laboratorio, Práctica, 6 corazones, ligas/logros/certificado, y (cuando exista Firebase) la sincronización web ↔ APK.
+- Pruebas de Gerardo en teléfono real: instalar la APK 2.0 sobre la 1.0.1 (debe conservar el avance local), registro/login en la nube (tras activar Auth), completar una lección, tarea JS y por archivo, Laboratorio, Práctica, 6 corazones, ligas/logros/certificado, migración del avance local a la nube y sincronización web ↔ APK.

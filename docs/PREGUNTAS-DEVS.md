@@ -8,23 +8,23 @@ Una app estilo Duolingo, en español, para aprender a programar jugando: Introdu
 
 ## ¿Dónde vive la app?
 
-Como artefacto web fullstack de Muse (slug: `aprender-a-programar`). El código no está en este repositorio: este repo solo tiene documentación (`docs/`). El APK de Android es una reconstrucción local aparte con el mismo contenido (`~/workspace/android/programar-app/`: un solo `www/index.html` + `www/data/*.js`, localStorage y login local por cuenta) — el artefacto web no tiene URL pública, así que no se puede envolver en un WebView. La nube (Firebase) está pendiente de crear: hasta entonces la app es modo local y el avance NO se sincroniza entre la web y la APK (la web usa su propio backend; la APK usará Firebase cuando exista el proyecto).
+Como artefacto web fullstack de Muse (slug: `aprender-a-programar`). El código no está en este repositorio: este repo solo tiene documentación (`docs/`). El APK de Android es una reconstrucción local aparte con el mismo contenido (`~/workspace/android/programar-app/`: un solo `www/index.html` + `www/data/*.js`, localStorage y login local por cuenta) — el artefacto web no tiene URL pública, así que no se puede envolver en un WebView. La nube es Firebase (proyecto `aprender-programar`, creado el 2026-11-21): la APK 2.0 ya la trae, pero falta activar Auth por correo/contraseña en la consola — hasta entonces el login en la nube falla y la app trabaja en modo local.
 
 ## ¿En qué lenguaje / con qué stack está hecha?
 
-Pendiente de documentar con detalle el stack interno del artefacto web. Lo que sí está verificado: la APK es JavaScript de una sola página (sin framework) con Capacitor 8.6.0, y su contenido vive en `www/data/*.js` (un archivo por ruta más `labs.js`), con el contrato completo en `SCHEMA.md`. El backend previsto es Firebase, compartido por la app web y la APK, con el mismo modelo que la app Checklist de Soporte en la nube y que la app de DevTools, pero con proyecto Firebase separado (`aprender-programar`, plan Spark): Firebase Auth con correo y contraseña (login por usuario con correos sintéticos `usuario@programar.local`) y Firestore con colecciones `users`, `usernames` y `progress` (las tareas viven dentro de `progress.tasks`, no hay colección aparte; reglas: cada usuario solo ve lo suyo; no hay rol de admin, todos son alumnos). La capa de nube es `www/cloud/firebase.js`, compilada con esbuild a `www/cloud/firebase.bundle.js` (md5 `1a841655ff6ad59fbeb9fd06fe83b4bd`); la APK usa caché persistente de Firestore para funcionar offline. El proyecto Firebase aún no existe (la CLI perdió la sesión); los pasos para crearlo están en el README.
+Pendiente de documentar con detalle el stack interno del artefacto web. Lo que sí está verificado: la APK es JavaScript de una sola página (sin framework) con Capacitor 8.6.0, y su contenido vive en `www/data/*.js` (un archivo por ruta más `labs.js`), con el contrato completo en `SCHEMA.md`. El backend es Firebase, compartido por la app web y la APK, con el mismo modelo que la app Checklist de Soporte en la nube y que la app de DevTools, pero con proyecto Firebase separado (`aprender-programar`, plan Spark): Firebase Auth con correo y contraseña (login por usuario con correos sintéticos `usuario@programar.local`) y Firestore con colecciones `users`, `usernames` y `progress` (las tareas viven dentro de `progress.tasks`, no hay colección aparte; reglas: cada usuario solo ve lo suyo; no hay rol de admin, todos son alumnos). La capa de nube es `www/cloud/firebase.js`, compilada con esbuild a `www/cloud/firebase.bundle.js` (md5 `1a841655ff6ad59fbeb9fd06fe83b4bd`); la APK usa caché persistente de Firestore para funcionar offline. El proyecto Firebase ya existe (creado por CLI el 2026-11-21; Firestore en `nam5` con las reglas publicadas; app web registrada). Falta activar Auth por correo/contraseña en la consola; los pasos están en el README.
 
 ## ¿Cómo funciona el login?
 
 Cuentas con usuario y contraseña (más un nombre para los certificados). La sesión es persistente: queda guardada en el teléfono. El progreso es por cuenta. La primera cuenta creada hereda el avance hecho antes de que existiera el login (XP, lecciones y logros previos no se pierden).
 
-Cuando exista Firebase, el login será con Firebase Auth: el usuario se resuelve a un correo sintético `usuario@programar.local`. Al registrarse se puede dejar un correo real de recuperación (opcional) para el enlace de "Olvidé mi contraseña"; sin él, una contraseña olvidada no se puede recuperar y hay que crear otra cuenta. Las cuentas locales de la 1.0 no migran automáticamente: cada usuario vuelve a registrarse en la nube con el mismo usuario y contraseña, y en el primer inicio de sesión en la nube su avance local existente se sube a Firestore si aún no hay avance en la nube.
+El login es con Firebase Auth (en cuanto Auth por correo/contraseña esté activado en la consola): el usuario se resuelve a un correo sintético `usuario@programar.local`. Al registrarse se puede dejar un correo real de recuperación (opcional) para el enlace de "Olvidé mi contraseña"; sin él, una contraseña olvidada no se puede recuperar y hay que crear otra cuenta. Las cuentas locales de la 1.0 no migran automáticamente: cada usuario vuelve a registrarse en la nube con el mismo usuario y contraseña, y en el primer inicio de sesión en la nube su avance local existente se sube a Firestore si aún no hay avance en la nube.
 
 ## ¿Cómo se guarda el progreso?
 
 Por usuario: XP total, racha diaria, lecciones completadas por ruta y nivel, logros desbloqueados (de 16), certificados y tareas. Las lecciones se desbloquean paso a paso en un camino por ruta. Cada lección tiene un id estable (`<ruta>-<nivel><nn>`, por ejemplo `python-b01`, `qt-qml-e20`) y el avance se guarda por id, no por posición.
 
-En la versión 1.0 el progreso vive en la base del artefacto web (app web) o en localStorage (APK), sin sincronizar entre sí. Cuando exista Firebase vivirá en Firestore (`progress/{uid}`), compartido por la app web y la APK; la APK guardará además una copia local y sincronizará en vivo con `onSnapshot` al volver la conexión.
+En la versión 1.0 el progreso vivía en la base del artefacto web (app web) o en localStorage (APK), sin sincronizar entre sí. Desde la 2.0, con cuenta en la nube, vive en Firestore (`progress/{uid}`), compartido por la app web y la APK; la APK guarda además una copia local y sincroniza en vivo con `onSnapshot` al volver la conexión.
 
 ## ¿Cómo funcionan las tareas?
 
@@ -40,7 +40,7 @@ La pestaña 🧪 Laboratorio trae 4 guías paso a paso para instalar en la compu
 
 ## ¿Hay APK?
 
-Sí. La APK 1.0.1 se entregó el 2026-11-21 (paquete `mx.gerardo.programar`, `versionCode` 2, `versionName` 1.0.1, `targetSdk` 36, 3,951,348 bytes, md5 `9c803058e59783e2e9907a9aa3301196`, firmada con keystore permanente `~/workspace/android/keys/programar-release.keystore`, alias `programar`, SHA-256 `CE:C3:A3:F2:8B:68:16:98:F4:31:62:BB:42:D8:95:43:A0:57:B0:82:0A:43:8A:54:25:AE:0B:4E:98:97:FA:DE`, firma v2 verificada). Parche sobre la 1.0 (md5 `66da6fbb3a1a929f2f4ff2a6494b2b7e`) que corrige la tarea `javascript-e13`. Es una reconstrucción local aparte, no un envoltorio del artefacto web. Es modo local: sin Firebase todavía, así que el avance no sincroniza con la web. Verificación de la 1.0.1: `tests/check-data.cjs` 44,329 checks, 0 fallos; `tests/test-app.cjs` (jsdom, datos reales) 48/48. Pendiente de pruebas en un teléfono real. La APK con nube será la 2.0 (`versionCode` 3, mismo `appId` y keystore) cuando se cree el proyecto Firebase `aprender-programar`.
+Sí. La APK 2.0 se entregó el 2026-11-21 (paquete `mx.gerardo.programar`, `versionCode` 3, `versionName` 2.0, `targetSdk` 36, 3,951,340 bytes, md5 `2dac98edcccdb44f1a1d18685b819d8b`, firmada con keystore permanente `~/workspace/android/keys/programar-release.keystore`, alias `programar`, SHA-256 `CE:C3:A3:F2:8B:68:16:98:F4:31:62:BB:42:D8:95:43:A0:57:B0:82:0A:43:8A:54:25:AE:0B:4E:98:97:FA:DE`, firma v2 verificada). Primera versión con nube (Firebase `aprender-programar`, config real incluida): el perfil dice "Versión 2.0 · Nube: tu avance se sincroniza". Sustituye a la 1.0.1 (md5 `9c803058e59783e2e9907a9aa3301196`). Es una reconstrucción local aparte, no un envoltorio del artefacto web. **Ojo**: Auth por correo/contraseña aún no está activado en la consola, así que el login en la nube falla hasta que Gerardo lo active; mientras tanto la app trabaja en modo local. Verificación de la 2.0: `tests/check-data.cjs` 44,329 checks, 0 fallos; `tests/test-app.cjs` (jsdom, datos reales) 48/48. Pendiente de pruebas en un teléfono real.
 
 ## ¿Cómo se compila la APK?
 
@@ -67,10 +67,10 @@ Se edita o se crea un archivo en `www/data/*.js` siguiendo el contrato de `SCHEM
 - Cómo se calculan XP, racha y ligas, y dónde vive esa lógica.
 - Cómo se hace el despliegue del APK y qué permisos necesita (internet).
 - Cómo se respalda o se migra el progreso de los usuarios.
-- Cómo se crea el proyecto Firebase `aprender-programar` y se publica `firestore.rules` por consola.
+- Cómo se activa Auth por correo/contraseña en la consola de Firebase y se publica `firestore.rules`.
 
 ## Enlaces
 
 - App web: artefacto `aprender-a-programar` en Muse.
 - Repo (documentación): https://github.com/gcruzhz/aprender-a-programar (creado por Gerardo, vacío; docs listos en `docs/`, se suben solo con su aprobación).
-- Proyecto Firebase: `aprender-programar` (pendiente de crear; consola https://console.firebase.google.com).
+- Proyecto Firebase: `aprender-programar` (creado el 2026-11-21; falta activar Auth por correo/contraseña en la consola https://console.firebase.google.com).
